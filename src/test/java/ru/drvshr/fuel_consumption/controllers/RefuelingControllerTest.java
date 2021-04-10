@@ -1,7 +1,9 @@
 package ru.drvshr.fuel_consumption.controllers;
 
 import java.text.MessageFormat;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.junit.Before;
@@ -19,6 +21,7 @@ import lombok.Getter;
 import ru.drvshr.fuel_consumption.model.RefuelingEntity;
 import ru.drvshr.fuel_consumption.repositories.IRefuelingRepository;
 import ru.drvshr.fuel_consumption.services.RefuelingService;
+import ru.drvshr.fuel_consumption.services.dto.AverageFuelConsumptionRequest;
 import ru.drvshr.fuel_consumption.services.dto.Refueling;
 
 public class RefuelingControllerTest extends BaseTest {
@@ -172,9 +175,54 @@ public class RefuelingControllerTest extends BaseTest {
         //then
         resultActions //
                       .andExpect(MockMvcResultMatchers.status().isOk());
-//        assertTrue(refuelingResponse != null && refuelingResponse.getId() != null);
     }
 
     /* end of testing "GETALL" ------------------------------------------------------------------------------------ */
+
+    /* beginning testing "SEARCH" ------------------------------------------------------------------------------------ */
+
+    @Test
+    public void successfulDelete() throws Exception {
+        //given
+        String uriOperation = "/search";
+
+        Refueling refuelingRequest = RefuelingService.mappingRefuelingEntityToRequest(refuelingRepository.findAll().iterator().next());
+        String inputJson = mapToJson(refuelingRequest);
+        //when
+        ResultActions resultActions = mvc.perform(MockMvcRequestBuilders //
+                                                                         .get(MessageFormat.format("{0}{1}/{2}", URIRoot, uriOperation, refuelingRequest.getId()))//
+                                                                         .contentType(MediaType.APPLICATION_JSON_VALUE) //
+                                                                         .content(inputJson));
+        //then
+        resultActions //
+                      .andExpect(MockMvcResultMatchers.status().isOk());
+        boolean existsById = refuelingRepository.existsById(Objects.requireNonNull(refuelingRequest.getId()));
+        assertTrue(existsById);
+    }
+
+    /* end of testing "SEARCH" ------------------------------------------------------------------------------------ */
+
+    /* beginning testing "AVERAGE" ------------------------------------------------------------------------------------ */
+
+    @Test
+    public void successfulAverage() throws Exception {
+        //given
+        String uriOperation = "/average";
+
+//        Refueling refuelingRequest = RefuelingService.mappingRefuelingEntityToRequest(refuelingRepository.findAll().iterator().next());
+        AverageFuelConsumptionRequest request = new AverageFuelConsumptionRequest(LocalDate.of(2021, 1, 1),LocalDate.now());
+
+        String inputJson = mapToJson(request);
+        //when
+        ResultActions resultActions = mvc.perform(MockMvcRequestBuilders //
+                                                                         .post(MessageFormat.format("{0}{1}", URIRoot, uriOperation))//
+                                                                         .contentType(MediaType.APPLICATION_JSON_VALUE) //
+                                                                         .content(inputJson));
+        //then
+        resultActions //
+                      .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    /* end of testing "AVERAGE" ------------------------------------------------------------------------------------ */
 
 }

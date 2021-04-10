@@ -1,6 +1,6 @@
 package ru.drvshr.fuel_consumption.model;
 
-import java.time.LocalDate;
+import java.sql.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -50,7 +50,7 @@ public class RefuelingEntity {
     private String description;
     /** Дата заправки */
     @Column(name = "DATE")
-    private LocalDate date;
+    private Date date;
     /** показание одометра в {@link EDistanceUnit} */
     @Column(name = "ODOMETER")
     private Integer odometer;

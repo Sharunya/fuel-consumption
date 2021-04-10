@@ -18,9 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.drvshr.fuel_consumption.BootApplication;
 import ru.drvshr.fuel_consumption.enums.EFuelType;
@@ -39,11 +37,14 @@ public class BaseTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
-    private static int lastOdometer = 0;
+    private static int lastOdometer;
+    private static LocalDate date = LocalDate.now();
+
 
     @BeforeClass
     public static void init() {
         lastOdometer = getRandomNumber(1000, 10000);
+        date = LocalDate.of(2021, 1, 1);
     }
 
     @Before
@@ -57,7 +58,7 @@ public class BaseTest {
         return objectMapper.writeValueAsString(obj);
     }
 
-    protected <T> T mapFromJson(String json, Class<T> clazz) throws JsonParseException, JsonMappingException, IOException {
+    protected <T> T mapFromJson(String json, Class<T> clazz) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(json, clazz);
@@ -76,10 +77,11 @@ public class BaseTest {
         int tmpLastOdometer = lastOdometer;
         int odometer = lastOdometer + getRandomNumber(10, 1000);
         lastOdometer = odometer;
+        date = date.plusDays(getRandomNumber(2, 12));
         int volume = getRandomNumber(5, 50);
         return (new Refueling()).setId(id)
                                 .setDescription("description")
-                                .setDate(LocalDate.now())
+                                .setDate(date)
                                 .setOdometer(odometer)
                                 .setLastOdometer(tmpLastOdometer)
                                 .setVolume(volume)

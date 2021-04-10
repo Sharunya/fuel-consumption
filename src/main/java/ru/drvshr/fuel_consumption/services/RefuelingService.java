@@ -1,11 +1,13 @@
 package ru.drvshr.fuel_consumption.services;
 
+import java.sql.Date;
 import java.text.MessageFormat;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import lombok.Getter;
 import lombok.ToString;
 import ru.drvshr.fuel_consumption.model.RefuelingEntity;
 import ru.drvshr.fuel_consumption.repositories.IRefuelingRepository;
+import ru.drvshr.fuel_consumption.services.dto.AverageFuelConsumptionRequest;
 import ru.drvshr.fuel_consumption.services.dto.Refueling;
 
 /**
@@ -22,9 +25,10 @@ import ru.drvshr.fuel_consumption.services.dto.Refueling;
 @ToString
 @Service
 public class RefuelingService {
-    @Autowired
     @Getter
-    private IRefuelingRepository refuelingRepository;
+    private final IRefuelingRepository refuelingRepository;
+
+    public RefuelingService(IRefuelingRepository refuelingRepository) {this.refuelingRepository = refuelingRepository;}
 
     public Refueling saveRefueling(@Nullable Refueling refuelingReq) throws IllegalStateException, NotFoundException {
         Refueling refueling = Optional.ofNullable(refuelingReq).orElseThrow(() -> new IllegalStateException("Запрос пустой!"));
@@ -44,11 +48,25 @@ public class RefuelingService {
         return mappingRefuelingEntityToRequest(getEntityFromBD(id));
     }
 
+    public void delete(@Nullable Long refuelingId) throws EmptyResultDataAccessException {
+        Long id = Optional.ofNullable(refuelingId).orElseThrow(() -> new IllegalStateException("ID отсутствует"));
+        refuelingRepository.deleteById(id);
+    }
+
+    public List<Refueling> averageConsumption(@Nullable AverageFuelConsumptionRequest request) throws EmptyResultDataAccessException {
+        AverageFuelConsumptionRequest requestOptional = Optional.ofNullable(request).orElseThrow(() -> new IllegalStateException("Запрос пустой!"));
+        LocalDate dateFrom = Optional.ofNullable(requestOptional.getDateFrom()).orElse(LocalDate.MIN);
+        LocalDate dateTo = Optional.ofNullable(requestOptional.getDateTo()).orElse(LocalDate.MAX);
+        List<RefuelingEntity> refuelingEntities = refuelingRepository.averageConsumption(Date.valueOf(dateFrom), Date.valueOf(dateTo));
+        return refuelingEntities //
+                                 .stream() //
+                                 .map(RefuelingService::mappingRefuelingEntityToRequest) //
+                                 .collect(Collectors.toList());
+    }
+
     public List<Refueling> getAll() {
         return refuelingRepository.findAll().stream().map(RefuelingService::mappingRefuelingEntityToRequest).collect(Collectors.toList());
     }
-
-
 
     private RefuelingEntity getEntityFromBD(Long refuelingId) throws NotFoundException {
         return refuelingRepository //
@@ -59,7 +77,7 @@ public class RefuelingService {
     public static RefuelingEntity mappingRequestToRefuelingEntity(Refueling refueling) {
         return (new RefuelingEntity()).setId(refueling.getId())
                                       .setDescription(refueling.getDescription())
-                                      .setDate(refueling.getDate())
+                                      .setDate(Date.valueOf(refueling.getDate()))
                                       .setOdometer(refueling.getOdometer())
                                       .setLastOdometer(refueling.getLastOdometer())
                                       .setVolume(refueling.getVolume())
@@ -73,7 +91,7 @@ public class RefuelingService {
     public static Refueling mappingRefuelingEntityToRequest(RefuelingEntity refuelingEntity) {
         return (new Refueling()).setId(refuelingEntity.getId())
                                 .setDescription(refuelingEntity.getDescription())
-                                .setDate(refuelingEntity.getDate())
+                                .setDate(refuelingEntity.getDate().toLocalDate())
                                 .setOdometer(refuelingEntity.getOdometer())
                                 .setLastOdometer(refuelingEntity.getLastOdometer())
                                 .setVolume(refuelingEntity.getVolume())
